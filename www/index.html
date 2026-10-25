@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#f7f6f0">
+  <title>Minha lista de compras</title>
+  <link rel="stylesheet" href="lib/framework7-bundle.min.css">
+  <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+  <div id="app">
+    <div class="view view-main">
+      <div class="page shopping-page">
+        <div class="page-content">
+          <main class="app-shell">
+            <header class="topbar">
+              <img class="brand-image" src="img/grocery-header.png" alt="Ilustração de compras">
+              <div class="brand-copy"><h1>Minhas compras</h1></div>
+              <button class="icon-button" id="add-sector" aria-label="Adicionar setor" title="Adicionar setor">＋</button>
+            </header>
+
+            <section class="welcome-card">
+              <div class="welcome-orbit orbit-one"></div><div class="welcome-orbit orbit-two"></div>
+              <div class="welcome-content">
+                <h2>Sua compra, sem complicação.</h2>
+                <p>Organize por setor e acompanhe o total.</p>
+              </div>
+              <div class="basket-art" aria-hidden="true"><span>🥬</span><span>🍊</span><span>🥖</span></div>
+            </section>
+
+            <section class="list-heading">
+              <div><span class="eyebrow"></span><h2>Itens por setor</h2></div>
+              <div class="list-heading-actions"><button class="manage-sectors-button" id="manage-sectors" type="button">Gerenciar</button><span class="item-count" id="item-count">0 itens</span></div>
+            </section>
+
+            <div class="sector-tabs" id="sector-tabs" role="tablist" aria-label="Setores"></div>
+            <div class="list-tools">
+              <button class="add-item-button" id="add-item"><span>＋</span> Adicionar item</button>
+            </div>
+
+            <section id="shopping-list" class="shopping-list" aria-live="polite"></section>
+            <div class="empty-state" id="empty-state" hidden>
+              <div class="empty-icon">🛒</div><h3>Sua lista está começando</h3>
+              <p>Adicione um item para acompanhar as quantidades e os valores.</p>
+              <button class="primary-button" id="empty-add-item">Adicionar primeiro item</button>
+            </div>
+            <div class="bottom-space"></div>
+          </main>
+        </div>
+
+        <div class="product-modal" id="product-modal" hidden>
+          <button class="modal-scrim" type="button" aria-label="Fechar formulário" data-close-product></button>
+          <section class="product-modal-card" role="dialog" aria-modal="true" aria-labelledby="product-modal-title">
+            <h2 id="product-modal-title">Adicionar produto</h2>
+            <p class="modal-sector" id="modal-sector"></p>
+            <form id="product-form">
+              <label class="modal-field">Nome do produto<input id="new-product-name" type="text" autocomplete="off" placeholder="Ex.: Açúcar" required></label>
+              <div class="modal-fields-row">
+                <label class="modal-field">Quantidade<input id="new-product-qty" type="text" inputmode="decimal" placeholder="1" value="1" required></label>
+                <label class="modal-field">Valor unitário<input id="new-product-price" type="text" inputmode="decimal" placeholder="0,00" required></label>
+              </div>
+              <p class="form-error" id="product-form-error" aria-live="polite"></p>
+              <div class="modal-actions"><button type="button" class="modal-cancel" data-close-product>Cancelar</button><button type="submit" class="modal-submit">Adicionar</button></div>
+            </form>
+          </section>
+        </div>
+
+        <div class="product-modal" id="sector-modal" hidden>
+          <button class="modal-scrim" type="button" aria-label="Fechar gerenciamento de setores" data-close-sectors></button>
+          <section class="product-modal-card sector-manager-card" role="dialog" aria-modal="true" aria-labelledby="sector-modal-title">
+            <h2 id="sector-modal-title">Gerenciar setores</h2>
+            <p class="modal-sector">Setores com produtos precisam ficar na lista.</p>
+            <div class="sector-manager-list" id="sector-manager-list"></div>
+            <div class="modal-actions"><button type="button" class="modal-cancel" data-close-sectors>Fechar</button></div>
+          </section>
+        </div>
+
+        <div class="total-bar">
+          <div class="total-inner"><div><span class="total-label">TOTAL DA COMPRA</span><span class="total-note">App criado por Nei o Bom em 24/10/2026</span></div><strong id="grand-total">R$ 0,00</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="lib/framework7-bundle.min.js"></script>
+  <script src="js/my-app.js"></script>
+</body>
+</html>

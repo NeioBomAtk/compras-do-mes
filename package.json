@@ -3,7 +3,6 @@
   "displayName": "compras do mes",
   "version": "1.0.0",
   "description": "A sample Apache Cordova application that responds to the deviceready event.",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -18,9 +17,6 @@
     ]
   },
   "dependencies": {
-    "cordova": "^13.0.0",
-    "framework7": "^9.2.0",
-    "to": "^0.2.9",
-    "update": "^0.7.4"
+    "cordova": "^13.0.0"
   }
 }

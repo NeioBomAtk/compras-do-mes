@@ -53,6 +53,10 @@ body { font-family: var(--sans); background: var(--paper); color: var(--ink); te
 .product-name-line { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
 .product-name { width: 100%; min-width: 0; height: 36px; flex: 1; padding: 0 10px; border: 1px solid #dfe2d2; border-radius: 8px; background: #fbfbf8; color: #343a31; font: 500 13px var(--sans); outline: none; touch-action: manipulation; user-select: text; -webkit-user-select: text; }
 .product-name::placeholder { color: #a1a494; }
+.cart-toggle, .clear-cart-button { border: 0; background-color: transparent; background-image: url('../img/botao.png'); background-repeat: no-repeat; background-size: 200% 100%; background-position: left center; cursor: pointer; }
+.cart-toggle { width: 40px; height: 22px; flex: 0 0 40px; border-radius: 99px; }
+.cart-toggle.in-cart { background-position: right center; }
+.cart-toggle:active, .clear-cart-button:active { transform: scale(.94); }
 .delete-item { width: 34px; height: 36px; flex: 0 0 34px; border: 0; border-radius: 8px; background: transparent; color: #777d67; font: 400 22px/1 var(--sans); cursor: pointer; }
 .delete-item:active { background: #f0f1e9; }
 .field-labels, .product-fields { display: grid; grid-template-columns: 1fr 1.15fr 1.15fr; gap: 8px; }
@@ -71,8 +75,12 @@ body { font-family: var(--sans); background: var(--paper); color: var(--ink); te
 .bottom-space { height: 36px; }
 .total-bar { position: absolute; z-index: 10; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--line); padding: 12px 22px calc(env(safe-area-inset-bottom) + 12px); box-shadow: 0 -5px 18px #20282016; }
 .total-inner { max-width: 496px; margin: auto; display: flex; align-items: center; justify-content: space-between; }
+.total-copy { min-width: 0; }
+.total-label-row { display: flex; align-items: center; gap: 8px; }
 .total-label { display: block; font-size: 9px; letter-spacing: 1.3px; font-weight: 700; color: #767c54; }
 .total-note { display: block; font-size: 8px; letter-spacing: -.1px; color: #687056; margin-top: 3px; white-space: nowrap; }
+.clear-cart-button { width: 40px; height: 22px; flex: 0 0 40px; background-image: url('../img/limpa-lista.png'); border-radius: 99px; }
+.clear-cart-button.has-items { background-position: right center; }
 .total-inner strong { font: 600 21px var(--serif); color: #30392c; }
 .dialog-input-field input { font-family: var(--sans) !important; }
 

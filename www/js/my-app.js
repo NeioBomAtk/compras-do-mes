@@ -58,7 +58,7 @@ if (!Array.isArray(data.sectors)) data.sectors = defaultData.sectors;
 if (!Array.isArray(data.items)) data.items = [];
 const dataBeforeCleanup = JSON.stringify({ sectors: data.sectors, items: data.items });
 data.sectors = data.sectors.map((sector) => stripEmojis(sector).trim()).filter(Boolean);
-data.items = data.items.map((item) => ({ ...item, name: stripEmojis(item.name).trim() })).filter(isComplete);
+data.items = data.items.map((item) => ({ ...item, name: stripEmojis(item.name).trim(), inCart: item.inCart === true })).filter(isComplete);
 const needsCleanup = JSON.stringify({ sectors: data.sectors, items: data.items }) !== dataBeforeCleanup;
 let activeSector = 'Todos';
 let pendingSector = '';
@@ -70,6 +70,7 @@ const save = () => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 };
 const totalFor = (item) => (Number(item.qty) || 0) * (Number(item.price) || 0);
+const cartHasItems = () => data.items.some((item) => item.inCart);
 
 function render() {
   const tabs = document.querySelector('#sector-tabs');
@@ -81,7 +82,7 @@ function render() {
       <div class="sector-title-row"><div class="sector-title"><span class="sector-dot"></span>${escapeHtml(sector)}</div><span class="sector-count">${items.length} ${items.length === 1 ? 'ITEM' : 'ITENS'}</span></div>
       ${items.map((item) => `
         <div class="product-row" data-item="${item.id}">
-          <div class="product-name-line"><input class="product-name" type="text" autocomplete="off" aria-label="Nome do produto" placeholder="Nome do produto" value="${escapeHtml(item.name)}" data-field="name"><button class="delete-item" type="button" aria-label="Remover ${escapeHtml(item.name)}" title="Remover item" data-delete="${item.id}">×</button></div>
+          <div class="product-name-line"><input class="product-name" type="text" autocomplete="off" aria-label="Nome do produto" placeholder="Nome do produto" value="${escapeHtml(item.name)}" data-field="name"><button class="cart-toggle ${item.inCart ? 'in-cart' : ''}" type="button" aria-label="${item.inCart ? 'Retirar' : 'Colocar'} ${escapeHtml(item.name)} ${item.inCart ? 'do' : 'no'} carrinho" title="${item.inCart ? 'Retirar do carrinho' : 'Colocar no carrinho'}" data-cart-toggle="${item.id}"></button><button class="delete-item" type="button" aria-label="Remover ${escapeHtml(item.name)}" title="Remover item" data-delete="${item.id}">×</button></div>
           <div class="field-labels"><span>QUANTIDADE</span><span>VALOR UNITÁRIO</span><span>SUBTOTAL</span></div>
           <div class="product-fields"><input class="qty-input" type="text" inputmode="decimal" aria-label="Quantidade" value="${item.qty}" placeholder="0" data-field="qty"><input type="text" inputmode="decimal" aria-label="Valor unitário em reais" value="${Number(item.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}" data-field="price"><strong class="product-subtotal">${money(totalFor(item))}</strong></div>
         </div>`).join('')}
@@ -91,6 +92,10 @@ function render() {
   const count = data.items.length;
   document.querySelector('#item-count').textContent = `${count} ${count === 1 ? 'item' : 'itens'}`;
   document.querySelector('#grand-total').textContent = money(data.items.reduce((sum, item) => sum + totalFor(item), 0));
+  const clearCart = document.querySelector('#clear-cart');
+  clearCart.classList.toggle('has-items', cartHasItems());
+  clearCart.setAttribute('aria-label', cartHasItems() ? 'Esvaziar carrinho' : 'Carrinho vazio');
+  clearCart.title = cartHasItems() ? 'Esvaziar carrinho' : 'Carrinho vazio';
 }
 
 function normalizeName(name) {
@@ -278,6 +283,7 @@ document.querySelector('#shopping-list').addEventListener('input', (event) => {
   if (field === 'name') {
     item.name = sanitizeTextInput(event.target).trim();
     row.querySelector('.delete-item').setAttribute('aria-label', `Remover ${item.name || 'produto'}`);
+    row.querySelector('.cart-toggle').setAttribute('aria-label', `${item.inCart ? 'Retirar' : 'Colocar'} ${item.name || 'produto'} ${item.inCart ? 'do' : 'no'} carrinho`);
   }
   if (field === 'qty') item.qty = numberValue(sanitizeQuantityInput(event.target));
   if (field === 'price') item.price = formatCurrencyInput(event.target);
@@ -333,10 +339,26 @@ document.querySelector('#shopping-list').addEventListener('change', (event) => {
 });
 
 document.querySelector('#shopping-list').addEventListener('click', (event) => {
+  const cartButton = event.target.closest('[data-cart-toggle]');
+  if (cartButton) {
+    const item = data.items.find((entry) => entry.id === Number(cartButton.dataset.cartToggle));
+    if (!item) return;
+    item.inCart = !item.inCart;
+    save();
+    render();
+    return;
+  }
   const button = event.target.closest('[data-delete]');
   if (!button) return;
   const item = data.items.find((entry) => entry.id === Number(button.dataset.delete));
   if (item) confirmRemoveItem(item);
+});
+
+document.querySelector('#clear-cart').addEventListener('click', () => {
+  if (!cartHasItems()) return;
+  data.items.forEach((item) => { item.inCart = false; });
+  save();
+  render();
 });
 
 if (needsCleanup) save();

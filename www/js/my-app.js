@@ -2,13 +2,33 @@ const app = new Framework7({ el: '#app', name: 'Minhas compras', id: 'br.com.com
 
 const STORAGE_KEY = 'compras-lista-v1';
 const defaultData = {
-  sectors: ['Todos', 'Mercearia', 'Hortifruti', 'Açougue', 'Laticínios', 'Limpeza'],
+  sectors: ['Todos', 'Alimentos', 'Limpeza', 'Banheiro'],
   items: [
-    { id: 1, name: 'Arroz', sector: 'Mercearia', qty: 5, price: 2.3 },
-    { id: 2, name: 'Feijão carioca', sector: 'Mercearia', qty: 2, price: 7.49 },
-    { id: 3, name: 'Tomate', sector: 'Hortifruti', qty: 1, price: 6.9 },
+    { id: 1, name: 'Arroz', sector: 'Alimentos', qty: 5, price: 2.3 },
+    { id: 2, name: 'Feijão Carioca', sector: 'Alimentos', qty: 2, price: 7.49 },
+    { id: 3, name: 'Detergente', sector: 'Limpeza', qty: 3, price: 2.5 },
+    { id: 4, name: 'Sabonete', sector: 'Banheiro', qty: 4, price: 3.2 },
   ],
 };
+
+function capitalizeProductName(text) {
+  if (!text) return '';
+  return String(text)
+    .trim()
+    .replace(/\s+/g, ' ')
+    .split(' ')
+    .map((word) => {
+      if (!word) return '';
+      if (word.includes('-')) {
+        return word.split('-').map((part) => {
+          if (!part) return '';
+          return part.charAt(0).toLocaleUpperCase('pt-BR') + part.slice(1).toLocaleLowerCase('pt-BR');
+        }).join('-');
+      }
+      return word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1).toLocaleLowerCase('pt-BR');
+    })
+    .join(' ');
+}
 
 function numberValue(value) {
   const normalized = String(value ?? '').trim().replace(/\s/g, '').replace(/\.(?=.*[,])/g, '').replace(',', '.');
@@ -56,9 +76,35 @@ let data;
 try { data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultData; } catch { data = defaultData; }
 if (!Array.isArray(data.sectors)) data.sectors = defaultData.sectors;
 if (!Array.isArray(data.items)) data.items = [];
+
+// Garantir que os 3 setores principais do usuário ('Alimentos', 'Limpeza', 'Banheiro') estejam na lista
+const coreSectors = ['Alimentos', 'Limpeza', 'Banheiro'];
+coreSectors.forEach((sec) => {
+  if (!data.sectors.some((s) => s.toLocaleLowerCase('pt-BR') === sec.toLocaleLowerCase('pt-BR'))) {
+    data.sectors.push(sec);
+  }
+});
+
+// Migrar setores legados ('Mercearia', 'Hortifruti', 'Açougue', 'Laticínios') para 'Alimentos' caso existam
+const legacyToAlimentos = ['mercearia', 'hortifruti', 'açougue', 'acougue', 'laticínios', 'laticinios'];
+data.items.forEach((item) => {
+  if (item && item.sector && legacyToAlimentos.includes(String(item.sector).toLowerCase())) {
+    item.sector = 'Alimentos';
+  }
+});
+// Limpar setores antigos vazios que possam ter sobrado
+data.sectors = data.sectors.filter((sector) => {
+  if (['Todos', 'Alimentos', 'Limpeza', 'Banheiro'].includes(sector)) return true;
+  return data.items.some((item) => item.sector === sector);
+});
+
 const dataBeforeCleanup = JSON.stringify({ sectors: data.sectors, items: data.items });
-data.sectors = data.sectors.map((sector) => stripEmojis(sector).trim()).filter(Boolean);
-data.items = data.items.map((item) => ({ ...item, name: stripEmojis(item.name).trim(), inCart: item.inCart === true })).filter(isComplete);
+data.sectors = data.sectors.map((sector) => capitalizeProductName(stripEmojis(sector))).filter(Boolean);
+data.items = data.items.map((item) => ({
+  ...item,
+  name: capitalizeProductName(stripEmojis(item.name)),
+  inCart: item.inCart === true
+})).filter(isComplete);
 const needsCleanup = JSON.stringify({ sectors: data.sectors, items: data.items }) !== dataBeforeCleanup;
 let activeSector = 'Todos';
 let pendingSector = '';
@@ -75,6 +121,7 @@ const cartHasItems = () => data.items.some((item) => item.inCart);
 function render() {
   const tabs = document.querySelector('#sector-tabs');
   tabs.innerHTML = data.sectors.map((sector) => `<button class="sector-tab ${sector === activeSector ? 'active' : ''}" role="tab" aria-selected="${sector === activeSector}" data-sector="${escapeHtml(sector)}">${escapeHtml(sector.toLocaleUpperCase('pt-BR'))}</button>`).join('');
+
   const filtered = data.items.filter((item) => activeSector === 'Todos' || item.sector === activeSector);
   const grouped = data.sectors.slice(1).filter((sector) => activeSector === 'Todos' || sector === activeSector).map((sector) => ({ sector, items: filtered.filter((item) => item.sector === sector) })).filter((group) => group.items.length);
   document.querySelector('#shopping-list').innerHTML = grouped.map(({ sector, items }) => `
@@ -224,23 +271,35 @@ function submitNewItem(event) {
   const nameInput = document.querySelector('#new-product-name');
   const qtyInput = document.querySelector('#new-product-qty');
   const priceInput = document.querySelector('#new-product-price');
-  const name = nameInput.value.trim();
+  const rawName = nameInput.value.trim();
   const qty = numberValue(qtyInput.value);
   const price = currencyValue(priceInput.value);
   const error = document.querySelector('#product-form-error');
-  if (!name || !qty || !price) {
+  if (!rawName || !qty || !price) {
     error.textContent = 'Preencha o nome, a quantidade e o valor unitário.';
-    if (!name) nameInput.focus();
+    if (!rawName) nameInput.focus();
     else if (!qty) qtyInput.focus();
     else priceInput.focus();
     return;
   }
-  const duplicate = data.items.find((item) => normalizeName(item.name) === normalizeName(name));
+  const formattedName = capitalizeProductName(rawName);
+  const duplicate = data.items.find((item) => normalizeName(item.name) === normalizeName(formattedName));
   if (duplicate) return confirmNewDuplicate(duplicate);
-  data.items.push({ id: nextId++, name, sector: pendingSector, qty, price });
+
+  const newItemId = nextId++;
+  // Novos itens vão para o início (topo) da lista para fácil acesso ao botão
+  data.items.unshift({ id: newItemId, name: formattedName, sector: pendingSector, qty, price, inCart: false });
   activeSector = pendingSector;
   save(); closeAddItem(); render();
-  window.setTimeout(() => document.querySelector(`[data-item="${nextId - 1}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+
+  window.setTimeout(() => {
+    const el = document.querySelector(`[data-item="${newItemId}"]`);
+    if (el) {
+      el.classList.add('newly-added');
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      window.setTimeout(() => el.classList.remove('newly-added'), 1400);
+    }
+  }, 80);
 }
 
 document.querySelector('#sector-tabs').addEventListener('click', (event) => {
@@ -248,6 +307,7 @@ document.querySelector('#sector-tabs').addEventListener('click', (event) => {
   if (!tab) return;
   activeSector = tab.dataset.sector; render();
 });
+
 document.querySelector('#add-item').addEventListener('click', openAddItem);
 document.querySelector('#manage-sectors').addEventListener('click', openSectorManager);
 document.querySelector('#sector-manager-list').addEventListener('click', (event) => {
@@ -260,12 +320,16 @@ document.querySelectorAll('[data-close-sectors]').forEach((button) => button.add
 document.querySelector('#empty-add-item').addEventListener('click', openAddItem);
 document.querySelector('#product-form').addEventListener('submit', submitNewItem);
 document.querySelector('#new-product-name').addEventListener('input', (event) => sanitizeTextInput(event.target));
+document.querySelector('#new-product-name').addEventListener('blur', (event) => {
+  const formatted = capitalizeProductName(event.target.value);
+  if (formatted) event.target.value = formatted;
+});
 document.querySelector('#new-product-qty').addEventListener('input', (event) => sanitizeQuantityInput(event.target));
 document.querySelector('#new-product-price').addEventListener('input', (event) => formatCurrencyInput(event.target));
 document.querySelectorAll('[data-close-product]').forEach((button) => button.addEventListener('click', closeAddItem));
 document.querySelector('#add-sector').addEventListener('click', () => {
   app.dialog.prompt('Qual é o nome do novo setor?', 'Adicionar setor', (name) => {
-    const sector = stripEmojis(name).trim();
+    const sector = capitalizeProductName(stripEmojis(name));
     if (!sector) return;
     if (data.sectors.some((entry) => entry.toLocaleLowerCase('pt-BR') === sector.toLocaleLowerCase('pt-BR'))) {
       app.dialog.alert('Esse setor já existe.'); return;
@@ -312,6 +376,9 @@ document.querySelector('#shopping-list').addEventListener('change', (event) => {
   const item = data.items.find((entry) => entry.id === Number(row.dataset.item));
   if (!item) return;
   if (field === 'name') {
+    const formatted = capitalizeProductName(item.name);
+    item.name = formatted;
+    input.value = formatted;
     const name = normalizeName(item.name);
     if (!name) {
       item.name = input.dataset.previousName || '';
